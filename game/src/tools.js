@@ -40,7 +40,7 @@ export function useTool(state, id, clickX, clickY) {
     const diamond = state.loot.find((l) => l.kind === 'diamond' && !l.taken);
     if (!diamond) return 'TIDAK ADA BERLIAN!';
     const d = Math.hypot(state.thief.x - diamond.x, state.thief.y - diamond.y);
-    if (d > 60) return 'DEKATI BERLIAN DULU!';
+    if (d > 46) return 'DEKATI BERLIAN DULU!'; // sama dengan jangkauan channeling (thief.js)
     state.coins -= tool.cost;
     state.thief.channel = 1; // instant open, resolved by main loop
     return 'LOCKPICK! BRANKAS TERBUKA';
