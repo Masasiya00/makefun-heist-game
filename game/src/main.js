@@ -85,8 +85,9 @@ function loadHeist(index, opts = {}) {
 }
 
 function startGame() {
+  const d = state.difficulty;
   state = newState();
-  state.difficulty = state.difficulty; // keep chosen difficulty (set on title)
+  state.difficulty = d;
   loadHeist(0);
 }
 
