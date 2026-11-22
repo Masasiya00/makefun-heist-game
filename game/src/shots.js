@@ -16,6 +16,9 @@ function poseCamera(cam, angle) {
 }
 
 export function stageShot(state, kind, loadHeist) {
+  // Nilai ?shot= yang tidak dikenal diabaikan: jangan freeze game di title.
+  const known = kind === 'cover' || kind === 'play' || kind === 'tools' || kind === 'win';
+  if (!known) return;
   if (kind === 'cover') {
     // Heist 3 (Museum): thief mid-room, 3 guards + yellow cones, 2 red camera cones,
     // diamond sparkling top-centre, alarm ~35%, full HUD.
@@ -71,7 +74,7 @@ export function stageShot(state, kind, loadHeist) {
     // The getaway screen: CLEAN GETAWAY, grade S, score breakdown.
     loadHeist(2, { silent: true });
     state.score = 1870;
-    state.lastGrade = { grade: 'S', lootPoints: 1150, timeBonus: 220, ghostBonus: 500, heistScore: 1870, timeText: '02:31' };
+    state.lastGrade = { grade: 'S', lootPoints: 1150, timeBonus: 220, ghostBonus: 500, heistScore: 720, timeText: '02:31' };
     state.mode = 'heistWin';
   }
   state.frozen = true;
