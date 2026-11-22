@@ -194,7 +194,7 @@ export const LEVELS = [
       { x: 640, y: 640, kind: 'small' },
       { x: 420, y: 140, kind: 'medium' },
       { x: 860, y: 620, kind: 'medium' },
-      { x: 640, y: 370, kind: 'diamond', label: 'BERLIAN PUSAT' },
+      { x: 640, y: 470, kind: 'diamond', label: 'BERLIAN PUSAT' },
     ],
     exit: { x: 44, y: 596, w: 84, h: 72 },
     lasers: [
