@@ -128,6 +128,7 @@ function pickRelics() {
 }
 
 function collectLoot(l) {
+  l.taken = true;
   const mult = state.comboTimer > 0 ? 2 : 1;
   state.combo = state.comboTimer > 0 ? state.combo + 1 : 1;
   state.comboTimer = 5;
