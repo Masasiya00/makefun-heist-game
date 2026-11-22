@@ -232,7 +232,7 @@ export function drawRelicChoice(ctx, state, mouse, choices) {
   ctx.fillText('HEIST SELESAI — PILIH 1 RELIC', 640, 200);
   ctx.fillStyle = PALETTE.text;
   ctx.font = '18px sans-serif';
-  ctx.fillText('Relic menemanimu sampai Heist 5. Klik satu kartu:', 640, 244);
+  ctx.fillText('Relic menemanimu sampai Heist 5. Klik satu kartu, atau tekan 1/2/3 (Enter = kartu pertama):', 640, 244);
   relicLayout(choices).forEach((b) => {
     const r = RELICS.find((x) => x.id === b.id);
     const hover = mouse.x >= b.x && mouse.x <= b.x + b.w && mouse.y >= b.y && mouse.y <= b.y + b.h;
@@ -268,10 +268,10 @@ export function drawHeistWin(ctx, state) {
   ctx.fillText(`GRADE ${g.grade}`, 640, 310);
   ctx.fillStyle = PALETTE.text;
   ctx.font = '19px sans-serif';
-  ctx.fillText(`Loot ${g.lootPoints}  •  Bonus waktu ${g.timeBonus}  •  Ghost ${g.ghostBonus}  •  Waktu ${g.timeText}`, 640, 360);
+  ctx.fillText(`Loot ${g.lootPoints} (sudah masuk skor)  •  Bonus waktu ${g.timeBonus}  •  Ghost ${g.ghostBonus}  •  Waktu ${g.timeText}`, 640, 360);
   ctx.fillStyle = PALETTE.textDim;
   ctx.font = '17px sans-serif';
-  ctx.fillText(`Skor heist: ${g.heistScore.toLocaleString('en-US')}  •  Total: ${state.score.toLocaleString('en-US')}`, 640, 396);
+  ctx.fillText(`Bonus menang: ${g.heistScore.toLocaleString('en-US')}  •  Total: ${state.score.toLocaleString('en-US')}`, 640, 396);
   ctx.fillStyle = PALETTE.text;
   ctx.font = 'bold 18px sans-serif';
   ctx.fillText(state.levelIndex + 1 >= 5 && !state.endless ? 'HEIST TERAKHIR SELESAI — tekan ENTER untuk ENDLESS MODE' : 'ENTER / klik untuk heist berikutnya', 640, 470);
@@ -302,7 +302,10 @@ export function drawDefeat(ctx, state) {
   ctx.fillText(state.caughtReason, 640, 310);
   ctx.fillStyle = PALETTE.textDim;
   ctx.font = '17px sans-serif';
-  ctx.fillText(`${state.level.name}  •  Heist tercapai: ${state.levelIndex + 1}/5  •  Skor: ${state.score.toLocaleString('en-US')}`, 640, 350);
+  // Di Endless, "N/5" menyesatkan: tampilkan loop + heist yang dicapai di Endless.
+  ctx.fillText(state.endless
+    ? `${state.level.name}  •  Endless loop ${state.loop + 1}, heist ke-${state.levelIndex + 1} (total ${5 + state.loop * 5 + state.levelIndex} heist selesai)  •  Skor: ${state.score.toLocaleString('en-US')}`
+    : `${state.level.name}  •  Heist tercapai: ${state.levelIndex + 1}/5  •  Skor: ${state.score.toLocaleString('en-US')}`, 640, 350);
   ctx.fillStyle = PALETTE.text;
   ctx.font = 'bold 18px sans-serif';
   ctx.fillText('R / klik = coba lagi dari heist ini', 640, 420);
