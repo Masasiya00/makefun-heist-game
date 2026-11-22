@@ -82,6 +82,13 @@ export function updateGuard(guard, dt, diff, loopMul, thief, blockers, smoke, lo
   }
 
   // Patrol: walk the waypoint loop, pausing at each corner.
+  // Penglihatan: kalau alarm sedang berbunyi (thief terlihat oleh guard /
+  // kamera mana pun) dan guard ini sedang patrol, ia tinggalkan rute dan
+  // selidiki posisi terakhir thief terlihat — sama seperti lemparan koin.
+  if (alarmSeen && guard.state === 'patrol') {
+    sendGuardTo(guard, thief.x, thief.y);
+    return;
+  }
   if (guard.pauseTimer > 0) {
     guard.pauseTimer -= dt;
     guard.angle += Math.sin(Date.now() * 0.001 + guard.x) * dt * 0.4;
