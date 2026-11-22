@@ -34,6 +34,9 @@ function newState() {
     thief: null,
     coins: 60,
     score: 0,
+    scoreBase: 0,     // skor saat heist yang sedang dimainkan pertama kali dimasuki
+    coinsBase: 60,    // koin saat heist yang sedang dimainkan pertama kali dimasuki
+    currentHeist: -1, // index heist yang sedang dimainkan (untuk bedakan masuk baru vs restart)
     combo: 0,
     comboTimer: 0,
     time: 0,
@@ -65,6 +68,17 @@ function loopMul() {
 }
 
 function loadHeist(index, opts = {}) {
+  // Anti-farm: skor/koin di-snapshot saat sebuah heist PERTAMA KALI dimasuki.
+  // Restart heist yang sama (R saat bermain/pause, retry di layar defeat)
+  // mengembalikan snapshot itu — loot respawn tapi skor/koin lama tidak menumpuk.
+  if (index !== state.currentHeist) {
+    state.scoreBase = state.score;
+    state.coinsBase = state.coins;
+    state.currentHeist = index;
+  } else {
+    state.score = state.scoreBase;
+    state.coins = state.coinsBase;
+  }
   state.levelIndex = index;
   state.level = buildLevel(index);
   state.guards = state.level.guards.map(createGuard);
@@ -103,7 +117,9 @@ function heistWin() {
   const timeBonus = Math.max(0, 300 - Math.floor(state.time) * 2);
   const ghost = !state.alarm.everSpotted;
   const ghostBonus = ghost ? 500 : 0;
-  const heistScore = lootPoints + timeBonus + ghostBonus;
+  // Loot sudah dihitung saat diambil (collectLoot); di sini hanya bonus menang
+  // yang ditambah, kalau tidak poin loot terhitung dua kali.
+  const heistScore = timeBonus + ghostBonus;
   const mm = String(Math.floor(state.time / 60)).padStart(2, '0');
   const ss = String(Math.floor(state.time % 60)).padStart(2, '0');
   state.lastGrade = { grade: gradeFor(state.time, ghost), lootPoints, timeBonus, ghostBonus, heistScore, timeText: `${mm}:${ss}` };
@@ -123,8 +139,12 @@ function defeat(reason) {
 
 function pickRelics() {
   const pool = RELICS.filter((r) => !state.relics.includes(r.id));
-  const shuffled = pool.sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 3);
+  // Fisher-Yates shuffle (sort acak bukan shuffle benar).
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, 3);
 }
 
 function collectLoot(l) {
@@ -183,6 +203,7 @@ function updatePlaying(dt) {
       const inGap = Math.abs(S.thief.x - gx) < L.gapW / 2;
       if (!inGap && distToSegment(S.thief.x, S.thief.y, L.x1, L.y1, L.x2, L.y2) < 12 && S.laserCooldown <= 0) {
         S.alarm.value = clamp(S.alarm.value + 18, 0, 100);
+        S.alarm.everSpotted = true; // kena laser = terlihat: tidak ada ghost bonus
         S.laserCooldown = 1;
         S.msg = 'LASER! ALARM +18';
         S.msgTimer = 1.2;
@@ -200,7 +221,10 @@ function updatePlaying(dt) {
   // Cameras sweep + beep.
   S.cameras.forEach((c) => {
     updateCamera(c, dt);
-    if (c.beepTimer <= 0) { c.beepTimer = 2.5 + Math.random(); playCameraBeep(audio); }
+    // Kamera yang dimatikan EMP tidak boleh bunyi: tanpa guard ini, beep
+    // bisa nyasar tepat saat EMP dimulai (beepTimer tidak berkurang saat
+    // disabled, tapi cek di bawah tetap jalan).
+    if (c.disabledTimer <= 0 && c.beepTimer <= 0) { c.beepTimer = 2.5 + Math.random(); playCameraBeep(audio); }
   });
 
   // Detection: guards first, then cameras.
@@ -270,7 +294,8 @@ function handlePlayingKeys() {
     if (consumePress(input, tool.key)) {
       state.tools.selected = tool.id;
       playClick(audio);
-      if (tool.id !== 'coin') useSelectedTool(null);
+      // Hanya memilih — pemakaian tetap lewat klik mouse di arena
+      // (sesuai petunjuk HUD: "klik: asap di kamu" dst).
       return;
     }
   }
@@ -339,11 +364,21 @@ function update(dt) {
   }
 
   if (state.mode === 'relic') {
-    handleClickRects(relicLayout(state.relicChoices), (r) => {
-      state.relics.push(r.id);
+    const pick = (i) => {
+      const choice = state.relicChoices[i];
+      if (!choice) return;
+      state.relics.push(choice.id);
       playClick(audio);
       state.levelIndex++;
       loadHeist(state.levelIndex);
+    };
+    // Keyboard: 1/2/3 pilih kartu ke-1/2/3, Enter pilih kartu pertama.
+    for (let i = 0; i < state.relicChoices.length; i++) {
+      if (consumePress(input, String(i + 1))) { pick(i); return; }
+    }
+    if (consumePress(input, 'Enter')) { pick(0); return; }
+    handleClickRects(relicLayout(state.relicChoices), (r) => {
+      pick(state.relicChoices.findIndex((c) => c.id === r.id));
     });
     return;
   }
@@ -359,7 +394,15 @@ function update(dt) {
         loadHeist(0);
       } else {
         state.relicChoices = pickRelics();
-        state.mode = 'relic';
+        if (state.relicChoices.length === 0) {
+          // Semua relic sudah dimiliki: tidak ada kartu untuk dipilih, jadi
+          // lewati layar relic sepenuhnya dan langsung ke heist berikutnya
+          // (kalau tidak, layar relic kosong = softlock, tanpa jalan keluar).
+          state.levelIndex++;
+          loadHeist(state.levelIndex);
+        } else {
+          state.mode = 'relic';
+        }
       }
     }
     return;
@@ -430,8 +473,14 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
   last = now;
-  if (!state.frozen) update(dt);
-  else clearTransient(input);
+  if (!state.frozen) {
+    const modeBefore = state.mode;
+    update(dt);
+    // Tombol basi tidak boleh bocor antar layar (mis. R di heistWin lalu
+    // ikut restart heist setelah pilih relic): bersihkan input yang belum
+    // ter-consume setiap kali mode game berubah.
+    if (state.mode !== modeBefore) clearTransient(input);
+  } else clearTransient(input);
   render(state.frozen ? state.shotTime : now / 1000);
   requestAnimationFrame(frame);
 }
