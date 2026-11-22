@@ -59,7 +59,7 @@ export const RELICS = [
   { id: 'magnet', name: 'MAGNET LOOT', desc: 'Radius ambil loot +45 px, koin loot +25%.' },
   { id: 'smoker', name: 'AHLI ASAP', desc: 'Bom asap bertahan +4 dtk, radius +30 px.' },
   { id: 'eagle', name: 'MATA ELANG', desc: 'Lihat jalur patroli guard & jangkauan cone di lantai.' },
-  { id: 'steady', name: 'TANGAN STABIL', desc: 'Buka berlian 2x lebih cepat (1,2 dtk).' },
+  { id: 'steady', name: 'TANGAN STABIL', desc: 'Buka berlian 2x lebih cepat (1,25 dtk).' },
 ];
 
 export const LOOT_VALUES = {
