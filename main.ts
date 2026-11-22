@@ -11,7 +11,7 @@
 // The grader may run this as an unprivileged user against an /output directory it already owns:
 // this program never removes /output itself, only its contents, and only creates it when missing.
 
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
@@ -44,3 +44,7 @@ writeFileSync(
     game_path_max_bytes: 1000,
   }),
 );
+
+// Sanity check: the hand-in is not complete without a non-empty dossier.
+const dossierStat = statSync(join(out, 'dossier.json'));
+if (dossierStat.size === 0) throw new Error('dossier.json is empty');
